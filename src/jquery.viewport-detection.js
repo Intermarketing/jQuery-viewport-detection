@@ -220,7 +220,6 @@
     $.fn[pluginName] = function(options) {
         return this.each(function() {
             if (!$.data(this, 'plugin_' + pluginName + this.classList.value)) {
-                console.log('plugin_' + pluginName + this.classList.value);
                 $.data(this, 'plugin_' +
                     pluginName + this.classList.value, new Plugin(this, options));
             }
