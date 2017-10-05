@@ -1,0 +1,13 @@
+{
+  "name": "viewport-detection",
+  "version": "1.0.0",
+  "description": "viewport-detection is a jQuery plugin to determine if a HTML node is visible in a configurable viewport.",
+  "main": "gulpfile.js",
+  "author": "Intermarketing Agency",
+  "license": "MIT",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^2.0.1"
+  }
+}
