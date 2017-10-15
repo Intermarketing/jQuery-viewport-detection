@@ -5,18 +5,13 @@
  * @param {Object} $ - Alias jQuery to '$'.
  * @param {Object} window - Pass in 'window' as local variable.
  * @param {Object} document - Pass in 'document' as local variable.
- * @param {string} undefined - Ensure 'undefined' is undefined by not passing in expected parameter. 
+ * @param {string} undefined - Ensure 'undefined' is undefined by not passing in expected parameter.
  */
 ;(function($, window, document, undefined){
 
     'use strict';
 
     var pluginName = 'viewportDetection',
-        cache = {
-            container: {},
-            elements: [],
-            elementCount: 0
-        },
         defaults = {
             debug: false,
             container: $(window),
@@ -35,14 +30,15 @@
             infinite: true,
             target: '> *'
         };
-    
+
     /**
      * Creates the plugin on 'new' instantiaton.
      * @constructor
      * @param {Object} container - The 'container' DOM Object as defined by 'options' during instantiaton.
      * @param {Object} options - The plugin instantiaton configuration Object.
      */
-    function Plugin(container, options) {
+    function Plugin(container, options, cache) {
+        this.cache = cache;
         this.settings = $.extend({}, defaults, options);
         this.container = $(this.settings.target, container);
         this._defaults = defaults;
@@ -81,7 +77,7 @@
                 if (callNow) func.apply(context, args);
             };
         },
-        
+
         /**
          * Returns the position of the container.
          * @returns {Object} - The position of the container.
@@ -106,9 +102,10 @@
          * @param {Object} - 'container' node.
          */
         setElements : function() {
+            var self = this;
             $.each(this.container, function() {
                 var $this = $(this);
-                cache.elements.push({
+                self.cache.elements.push({
                     infinite: true,
                     visible: false,
                     node: $this,
@@ -133,9 +130,9 @@
             var self = this,
                 container = this.getContainer();
 
-            $.each(cache.elements, function(i) {
-                var element = cache.elements[i];
-                
+            $.each(self.cache.elements, function(i) {
+                var element = self.cache.elements[i];
+
                 if ((element.position.left <= container.right) &&
                     (element.position.right >= container.left) &&
                     (element.position.top <= container.bottom) &&
@@ -144,9 +141,9 @@
                     if (element.visible != true) {
                         element.visible = true;
                         self.handleCallback(self.settings.visible, i);
-                                
+
                         if (self.settings.infinite != true && element.infinite) {
-                            cache.elementCount ++;
+                            self.cache.elementCount ++;
                         }
                     }
                 } else {
@@ -157,22 +154,23 @@
                 }
             });
 
-            if (self.settings.infinite != true && cache.elementCount == cache.elements.length) {
+            if (self.settings.infinite != true && self.cache.elementCount == self.cache.elements.length) {
                 self.scrollEvent().off();
             }
         },
-        
+
         /**
          * Handle callbacks from plugin configuration
          * object: 'visible' and 'invisible'.
          * @function
          * @param {func} callback - Plugin configuration callback.
-         * @param {number} i - Determine which cached element to 'callbac' func is applied to. 
+         * @param {number} i - Determine which cached element to 'callbac' func is applied to.
          * @throws Will throw an error if 'callback' is not a function.
          */
         handleCallback: function(callback, i) {
+            var self = this;
             if (typeof callback === 'function') {
-                callback(cache.elements[i].node);
+                callback(self.cache.elements[i].node);
             } else if (this.settings.debug) {
                 console.error(this._name + ': \'' + callback + '\'' + ' is not a function.')
             }
@@ -219,9 +217,14 @@
      */
     $.fn[pluginName] = function(options) {
         return this.each(function() {
-            if (!$.data(this, 'plugin_' + pluginName + this.classList.value)) {
+            if (!$.data(this, 'plugin_' + pluginName)) {
+                var cache = {
+                    container: {},
+                    elements: [],
+                    elementCount: 0
+                };
                 $.data(this, 'plugin_' +
-                    pluginName + this.classList.value, new Plugin(this, options));
+                    pluginName, new Plugin(this, options, cache));
             }
         });
     };
