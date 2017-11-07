@@ -14,7 +14,6 @@
     var pluginName = 'viewportDetection',
         defaults = {
             debug: false,
-            container: $(window),
             visible: function(){},
             invisible: function(){},
             debounce: {
@@ -37,10 +36,11 @@
      * @param {Object} container - The 'container' DOM Object as defined by 'options' during instantiaton.
      * @param {Object} options - The plugin instantiaton configuration Object.
      */
-    function Plugin(container, options, cache) {
+    function Plugin(container, options, cache, globalContainer) {
         this.cache = cache;
-        this.settings = $.extend({}, defaults, options);
-        this.container = $(this.settings.target, container);
+        this.$settings = $.extend({}, defaults, options);
+        this.$container = $(this.$settings.target, container);
+        this.$globalContainer = $(globalContainer);
         this._defaults = defaults;
         this._name = pluginName;
         this.init();
@@ -83,9 +83,8 @@
          * @returns {Object} - The position of the container.
          */
         getContainer : function() {
-            var settings = this.settings,
-                $container = $(settings.container),
-                offset = settings.offset;
+            var $container = this.$globalContainer,
+                offset = this.$settings.offset;
 
             return {
                 top : $container.scrollTop() + offset.top,
@@ -103,8 +102,9 @@
          */
         setElements : function() {
             var self = this;
-            $.each(this.container, function() {
+            $.each(this.$container, function() {
                 var $this = $(this);
+
                 self.cache.elements.push({
                     infinite: true,
                     visible: false,
@@ -132,7 +132,7 @@
 
             $.each(self.cache.elements, function(i) {
                 var element = self.cache.elements[i];
-
+                
                 if ((element.position.left <= container.right) &&
                     (element.position.right >= container.left) &&
                     (element.position.top <= container.bottom) &&
@@ -140,21 +140,21 @@
                 {
                     if (element.visible != true) {
                         element.visible = true;
-                        self.handleCallback(self.settings.visible, i);
+                        self.handleCallback(self.$settings.visible, i);
 
-                        if (self.settings.infinite != true && element.infinite) {
+                        if (self.$settings.infinite != true && element.infinite) {
                             self.cache.elementCount ++;
                         }
                     }
                 } else {
-                    if (self.settings.infinite == true && element.visible == true) {
+                    if (self.$settings.infinite == true && element.visible == true) {
                         element.visible = false;
-                        self.handleCallback(self.settings.invisible, i);
+                        self.handleCallback(self.$settings.invisible, i);
                     }
                 }
             });
 
-            if (self.settings.infinite != true && self.cache.elementCount == self.cache.elements.length) {
+            if (self.$settings.infinite != true && self.cache.elementCount == self.cache.elements.length) {
                 self.scrollEvent().off();
             }
         },
@@ -171,7 +171,7 @@
             var self = this;
             if (typeof callback === 'function') {
                 callback(self.cache.elements[i].node);
-            } else if (this.settings.debug) {
+            } else if (this.$settings.debug) {
                 console.error(this._name + ': \'' + callback + '\'' + ' is not a function.')
             }
         },
@@ -185,24 +185,24 @@
          */
         scrollEvent: function() {
             var self = this,
-                settings = this.settings,
+                $settings = this.$settings,
                 event = {},
                 debouncedEvent;
 
             debouncedEvent = self.debounce(function() {
                 self.elementInContainer();
-            }, settings.debounce.wait,
-               settings.debounce.immediate
+            }, $settings.debounce.wait,
+               $settings.debounce.immediate
             );
 
             return {
                 on: function() {
-                    $(settings.container).on('scroll', function() {
+                    self.$globalContainer.on('scroll', function() {
                         debouncedEvent();
                     });
                 },
                 off: function() {
-                    $(settings.container).off('scroll', this.on());
+                    self.$globalContainer.off('scroll', this.on());
                 }
             };
         }
@@ -219,12 +219,11 @@
         return this.each(function() {
             if (!$.data(this, 'plugin_' + pluginName)) {
                 var cache = {
-                    container: {},
                     elements: [],
                     elementCount: 0
                 };
                 $.data(this, 'plugin_' +
-                    pluginName, new Plugin(this, options, cache));
+                    pluginName, new Plugin(this, options, cache, window));
             }
         });
     };
